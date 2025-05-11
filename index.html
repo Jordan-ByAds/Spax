@@ -3,38 +3,58 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | Aviator</title>
+    <title>Unity WebGL | Aviator</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* Evita barras de desplazamiento */
+      }
+      #unity-canvas {
+        width: 100%;
+        height: 100%;
+        background: #231F20;
+        display: block; /* Elimina espacios no deseados */
+      }
+    </style>
   </head>
-  <body style="text-align: center; padding: 0; border: 0; margin: 0;">
-    <canvas id="unity-canvas" width=1920 height=1080 tabindex="-1" style="width: 1920px; height: 1080px; background: #231F20"></canvas>
-    <script src="Build/T0.1.loader.js"></script>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <script src="Build/test.loader.js"></script>
     <script>
+      // Configuración del viewport para móviles
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
         var meta = document.createElement('meta');
         meta.name = 'viewport';
         meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-
-        var canvas = document.querySelector("#unity-canvas");
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
-        canvas.style.position = "fixed";
-
-        document.body.style.textAlign = "left";
+        document.head.appendChild(meta);
       }
 
+      // Ajusta el canvas al 100% del viewport
+      function resizeCanvas() {
+        var canvas = document.querySelector("#unity-canvas");
+        canvas.style.width = "100vw"; // 100% del ancho visible
+        canvas.style.height = "100vh"; // 100% del alto visible
+      }
+
+      // Redimensionar al cargar y cuando cambie el tamaño de la ventana
+      window.addEventListener('load', resizeCanvas);
+      window.addEventListener('resize', resizeCanvas);
+
+      // Inicializar Unity
       createUnityInstance(document.querySelector("#unity-canvas"), {
         arguments: [],
-        dataUrl: "Build/T0.1.data",
-        frameworkUrl: "Build/T0.1.framework.js",
-        codeUrl: "Build/T0.1.wasm",
+        dataUrl: "Build/test.data",
+        frameworkUrl: "Build/test.framework.js",
+        codeUrl: "Build/test.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Aviator",
         productVersion: "1.0",
-        // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
-        // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
+        // matchWebGLToCanvasSize: true, // Asegura que el renderizado coincida con el tamaño del canvas
+        // devicePixelRatio: window.devicePixelRatio || 1, // Mejor calidad en pantallas retina
       });
     </script>
   </body>
