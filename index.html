@@ -5,6 +5,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity WebGL | Aviator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.png" type="image/png">
     <style>
       body, html {
         margin: 0;
@@ -14,13 +16,9 @@
         overflow: hidden;
         position: fixed;
         background: #231F20;
+        font-family: Arial, sans-serif;
       }
-      #unity-canvas {
-        width: 100%;
-        height: 100%;
-        background: #231F20;
-        display: block;
-      }
+      
       #unity-container {
         position: fixed;
         width: 100%;
@@ -30,50 +28,138 @@
         right: env(safe-area-inset-right);
         bottom: env(safe-area-inset-bottom);
       }
+      
+      #unity-canvas {
+        width: 100%;
+        height: 100%;
+        background: #231F20;
+        display: block;
+      }
+      
+      /* Loading Screen */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #231F20;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        transition: opacity 0.5s;
+      }
+      
+      #loading-spinner {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 20px;
+        animation: spin 1s linear infinite;
+      }
+      
+      #loading-progress {
+        width: 80%;
+        max-width: 300px;
+        height: 10px;
+        background: #333;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      
+      #loading-progress-bar {
+        height: 100%;
+        width: 0%;
+        background: #4CAF50;
+        transition: width 0.3s;
+      }
+      
+      #loading-text {
+        color: white;
+        font-size: 18px;
+        margin-top: 10px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <img id="loading-spinner" src="spinner.png" alt="Loading...">
+      <div id="loading-progress">
+        <div id="loading-progress-bar"></div>
+      </div>
+      <div id="loading-text">Cargando...</div>
+    </div>
+    
+    <!-- Unity Container -->
     <div id="unity-container">
       <canvas id="unity-canvas" tabindex="-1"></canvas>
     </div>
+    
     <script src="Build/test.loader.js"></script>
     <script>
-      // Función para ajustar el tamaño considerando áreas seguras
+      // Variables para el loading screen
+      const loadingScreen = document.getElementById('loading-screen');
+      const loadingProgressBar = document.getElementById('loading-progress-bar');
+      const loadingText = document.getElementById('loading-text');
+      
+      // Función para actualizar el progreso
+      function updateProgress(progress) {
+        const percent = Math.floor(progress * 100);
+        loadingProgressBar.style.width = `${percent}%`;
+        loadingText.textContent = `Cargando... ${percent}%`;
+      }
+      
+      // Función para ocultar el loading screen
+      function hideLoadingScreen() {
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 500); // Coincide con la duración de la transición
+      }
+      
+      // Función para ajustar el canvas
       function resizeCanvas() {
         const canvas = document.querySelector("#unity-canvas");
         const container = document.querySelector("#unity-container");
         
-        // Usamos window.innerHeight para evitar problemas con la barra de navegación
         canvas.style.width = window.innerWidth + 'px';
         canvas.style.height = window.innerHeight + 'px';
         
-        // Aplicamos el safe-area-inset para dispositivos con muesca
         container.style.top = 'env(safe-area-inset-top)';
         container.style.left = 'env(safe-area-inset-left)';
         container.style.right = 'env(safe-area-inset-right)';
         container.style.bottom = 'env(safe-area-inset-bottom)';
         
-        // Forzamos el redimensionamiento en Unity
         if (typeof unityInstance !== 'undefined') {
           unityInstance.SetFullscreen(1);
         }
       }
-
+      
       // Configuración inicial
       window.addEventListener('load', () => {
         resizeCanvas();
-        
-        // Redimensionar cuando cambia la orientación o se muestra/oculta la barra
         window.addEventListener('resize', resizeCanvas);
         window.addEventListener('orientationchange', resizeCanvas);
         
-        // Algunos dispositivos necesitan esto para detectar cambios en la barra de navegación
         if (window.visualViewport) {
           window.visualViewport.addEventListener('resize', resizeCanvas);
         }
       });
-
-      // Inicializar Unity
+      
+      // Inicializar Unity con pantalla de carga
       createUnityInstance(document.querySelector("#unity-canvas"), {
         arguments: [],
         dataUrl: "Build/test.data",
@@ -85,10 +171,31 @@
         productVersion: "1.0",
         matchWebGLToCanvasSize: true,
         devicePixelRatio: window.devicePixelRatio || 1,
-      }).then(instance => {
-        window.unityInstance = instance;
+      })
+      .then((unityInstance) => {
+        window.unityInstance = unityInstance;
         resizeCanvas();
+        
+        // Ocultar pantalla de carga cuando el juego esté listo
+        hideLoadingScreen();
+      })
+      .catch((message) => {
+        // Mostrar mensaje de error si falla la carga
+        loadingText.textContent = `Error al cargar el juego: ${message}`;
+        console.error(message);
       });
+      
+      // Actualizar progreso durante la carga (simulado)
+      // En una implementación real, usarías los eventos de progreso de Unity
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 0.01;
+        updateProgress(progress);
+        
+        if (progress >= 1) {
+          clearInterval(progressInterval);
+        }
+      }, 100);
     </script>
   </body>
 </html>
