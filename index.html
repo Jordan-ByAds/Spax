@@ -4,44 +4,74 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity WebGL | Aviator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
       body, html {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        overflow: hidden; /* Evita barras de desplazamiento */
+        overflow: hidden;
+        position: fixed;
+        background: #231F20;
       }
       #unity-canvas {
         width: 100%;
         height: 100%;
         background: #231F20;
-        display: block; /* Elimina espacios no deseados */
+        display: block;
+      }
+      #unity-container {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: env(safe-area-inset-top);
+        left: env(safe-area-inset-left);
+        right: env(safe-area-inset-right);
+        bottom: env(safe-area-inset-bottom);
       }
     </style>
   </head>
   <body>
-    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="unity-container">
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+    </div>
     <script src="Build/test.loader.js"></script>
     <script>
-      // Configuración del viewport para móviles
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.head.appendChild(meta);
-      }
-
-      // Ajusta el canvas al 100% del viewport
+      // Función para ajustar el tamaño considerando áreas seguras
       function resizeCanvas() {
-        var canvas = document.querySelector("#unity-canvas");
-        canvas.style.width = "100vw"; // 100% del ancho visible
-        canvas.style.height = "100vh"; // 100% del alto visible
+        const canvas = document.querySelector("#unity-canvas");
+        const container = document.querySelector("#unity-container");
+        
+        // Usamos window.innerHeight para evitar problemas con la barra de navegación
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        
+        // Aplicamos el safe-area-inset para dispositivos con muesca
+        container.style.top = 'env(safe-area-inset-top)';
+        container.style.left = 'env(safe-area-inset-left)';
+        container.style.right = 'env(safe-area-inset-right)';
+        container.style.bottom = 'env(safe-area-inset-bottom)';
+        
+        // Forzamos el redimensionamiento en Unity
+        if (typeof unityInstance !== 'undefined') {
+          unityInstance.SetFullscreen(1);
+        }
       }
 
-      // Redimensionar al cargar y cuando cambie el tamaño de la ventana
-      window.addEventListener('load', resizeCanvas);
-      window.addEventListener('resize', resizeCanvas);
+      // Configuración inicial
+      window.addEventListener('load', () => {
+        resizeCanvas();
+        
+        // Redimensionar cuando cambia la orientación o se muestra/oculta la barra
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', resizeCanvas);
+        
+        // Algunos dispositivos necesitan esto para detectar cambios en la barra de navegación
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', resizeCanvas);
+        }
+      });
 
       // Inicializar Unity
       createUnityInstance(document.querySelector("#unity-canvas"), {
@@ -53,8 +83,11 @@
         companyName: "DefaultCompany",
         productName: "Aviator",
         productVersion: "1.0",
-        // matchWebGLToCanvasSize: true, // Asegura que el renderizado coincida con el tamaño del canvas
-        // devicePixelRatio: window.devicePixelRatio || 1, // Mejor calidad en pantallas retina
+        matchWebGLToCanvasSize: true,
+        devicePixelRatio: window.devicePixelRatio || 1,
+      }).then(instance => {
+        window.unityInstance = instance;
+        resizeCanvas();
       });
     </script>
   </body>
